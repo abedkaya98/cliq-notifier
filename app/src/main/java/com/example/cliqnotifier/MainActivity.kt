@@ -220,15 +220,16 @@ class MainActivity : AppCompatActivity() {
         cursor?.use { c ->
             val addressIndex = c.getColumnIndex("address")
             var count = 0
-            while (c.moveToNext() && count < 100) { // أخذ أحدث 100 رسالة لاستخراج المرسلين
+            while (c.moveToNext() && count < 100) {
                 val address = if (addressIndex >= 0) c.getString(addressIndex) else null
-                if (!address.isNull_or_blank()) {
-                    sendersSet.add(address)
+                if (!address.isNullOrBlank()) {
+                    sendersSet.add(address) // تم التأكد من عدم كونها null
                 }
                 count++
             }
         }
-        return sendersSet.toList().ifEmpty { listOf("CAB", "REFLECT") }
+        val list = sendersSet.toList()
+        return if (list.isNotEmpty()) list else listOf("CAB", "REFLECT")
     }
 
     private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
