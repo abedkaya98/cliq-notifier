@@ -1,15 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base App Theme -->
-    <style name="Theme.CliQNotifier" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:statusBarColor">#121212</item>
-        <item name="android:navigationBarColor">#121212</item>
-    </style>
-
-    <!-- Splash Screen Preload Theme -->
-    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#121212</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/Theme.CliQNotifier</item>
+    <!-- الثيم الرئيسي للتطبيق - إجبار النمط الداكن -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- الألوان الأساسية -->
+        <item name="colorPrimary">@color/primary_accent</item>
+        <item name="colorPrimaryVariant">@color/primary_button</item>
+        <item name="colorOnPrimary">@color/text_white</item>
+        
+        <!-- خلفيات الشاشات والنافذة -->
+        <item name="android:windowBackground">@color/bg_main</item>
+        <item name="android:colorBackground">@color/bg_main</item>
+        
+        <!-- ألوان النصوص افتراضياً -->
+        <item name="android:textColorPrimary">@color/text_white</item>
+        <item name="android:textColorSecondary">@color/text_gray</item>
+        
+        <!-- حقول المدخلات (Text Inputs) -->
+        <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
     </style>
 </resources>
