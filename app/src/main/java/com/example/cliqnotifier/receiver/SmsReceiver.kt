@@ -1,4 +1,4 @@
-package com.example.cliqnotifier
+package com.example.cliqnotifier.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
