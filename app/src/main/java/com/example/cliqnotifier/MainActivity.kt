@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.example.cliqnotifier.utils.WebhookSender
+import com.example.cliqnotifier.R // <--- تم إضافة استيراد ملف الموارد لربط الـ Views
 
 class MainActivity : AppCompatActivity() {
 
