@@ -28,7 +28,7 @@ class TemplateAdapter(
         holder.binding.tvTemplatePattern.text = template.templatePattern
 
         holder.binding.btnDelete.setOnClickListener {
-            val currentPos = holder.bindingAdapterPosition
+            val currentPos = holder.adapterPosition
             if (currentPos != RecyclerView.NO_POSITION) {
                 onDeleteClick(currentPos)
             }
