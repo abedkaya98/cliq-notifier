@@ -17,25 +17,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        getByName("debug") {
-            // توقيع التطبيق بشهادة الـ Debug الافتراضية
-        }
+    // تفعيل ViewBinding بشكل صريح ليعمل ActivityMainBinding
+    buildFeatures {
+        viewBinding = true
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -52,9 +38,9 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.1")
     
-    // مكتبة OkHttp المطلوبة للإرسال عبر الشبكة
+    // OkHttp للإرسال عبر Webhook
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
-    // مكتبة الـ Splash Screen الرسمية للـ Preload العصري
+    // Splash Screen Preload
     implementation("androidx.core:core-splashscreen:1.0.1")
 }
