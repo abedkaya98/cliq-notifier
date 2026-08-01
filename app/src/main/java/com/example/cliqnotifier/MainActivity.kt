@@ -6,112 +6,70 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
-import android.widget.*
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.cliqnotifier.adapters.TemplateAdapter
-import com.example.cliqnotifier.models.BankTemplate
-import com.example.cliqnotifier.utils.TemplateParser
-import com.google.android.material.materialswitch.MaterialSwitch
+import com.example.cliqnotifier.databinding.ActivityMainBinding
+import com.example.cliqnotifier.utils.TemplateGenerator
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 class MainActivity : AppCompatActivity() {
 
-    private val PERMISSION_REQUEST_CODE = 101
-
-    private lateinit var etWebhookUrl: EditText
-    private lateinit var etSecretToken: EditText
-    private lateinit var switchService: MaterialSwitch
-    private lateinit var btnSave: Button
-    private lateinit var btnAddBankCard: Button
-    private lateinit var rvBankTemplates: RecyclerView
-
-    private lateinit var templateAdapter: TemplateAdapter
+    private lateinit var binding: ActivityMainBinding
     private val bankTemplatesList = mutableListOf<BankTemplate>()
-    private val gson = Gson()
+    private lateinit var templateAdapter: BankTemplateAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        initViews()
         setupRecyclerView()
-        checkPermissions()
         loadSavedSettings()
+        checkPermissions()
 
-        btnSave.setOnClickListener { saveSettings() }
-        btnAddBankCard.setOnClickListener { showAddTemplateDialog() }
-    }
+        binding.btnSave.setOnClickListener {
+            saveSettings()
+            Toast.makeText(this, "تم حفظ الإعدادات بنجاح!", Toast.LENGTH_SHORT).show()
+        }
 
-    private fun initViews() {
-        etWebhookUrl = findViewById(R.id.etWebhookUrl)
-        etSecretToken = findViewById(R.id.etSecretToken)
-        switchService = findViewById(R.id.switchService)
-        btnSave = findViewById(R.id.btnSave)
-        btnAddBankCard = findViewById(R.id.btnAddBankCard)
-        rvBankTemplates = findViewById(R.id.rvBankTemplates)
+        binding.btnAddBankCard.setOnClickListener {
+            showAddTemplateDialog()
+        }
     }
 
     private fun setupRecyclerView() {
-        templateAdapter = TemplateAdapter(
-            templates = bankTemplatesList,
-            onDeleteClick = { template -> deleteTemplate(template) },
-            onTestClick = { template -> testSingleTemplate(template) }
-        )
-        rvBankTemplates.layoutManager = LinearLayoutManager(this)
-        rvBankTemplates.adapter = templateAdapter
+        templateAdapter = BankTemplateAdapter(bankTemplatesList) { position ->
+            bankTemplatesList.removeAt(position)
+            templateAdapter.notifyItemRemoved(position)
+            saveSettings()
+        }
+        binding.rvBankTemplates.layoutManager = LinearLayoutManager(this)
+        binding.rvBankTemplates.adapter = templateAdapter
     }
 
     private fun checkPermissions() {
         val permissions = arrayOf(
             Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS,
-            Manifest.permission.POST_NOTIFICATIONS
+            Manifest.permission.READ_SMS
         )
-        val listPermissionsNeeded = permissions.filter { permission ->
-            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
+        val missingPermissions = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
-        if (listPermissionsNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toTypedArray(), PERMISSION_REQUEST_CODE)
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), 101)
         }
-    }
-
-    private fun loadSavedSettings() {
-        val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
-        etWebhookUrl.setText(prefs.getString("webhook_url", ""))
-        etSecretToken.setText(prefs.getString("secret_token", "CliqSecret2026"))
-        switchService.isChecked = prefs.getBoolean("service_enabled", false)
-
-        val jsonTemplates = prefs.getString("bank_templates", "[]")
-        val type = object : TypeToken<List<BankTemplate>>() {}.type
-        val savedList: List<BankTemplate> = gson.fromJson(jsonTemplates, type) ?: emptyList()
-
-        bankTemplatesList.clear()
-        bankTemplatesList.addAll(savedList)
-        templateAdapter.notifyDataSetChanged()
-    }
-
-    private fun saveSettings() {
-        val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
-        val editor = prefs.edit()
-
-        editor.putString("webhook_url", etWebhookUrl.text.toString().trim())
-        editor.putString("secret_token", etSecretToken.text.toString().trim())
-        editor.putBoolean("service_enabled", switchService.isChecked)
-
-        val jsonTemplates = gson.toJson(bankTemplatesList)
-        editor.putString("bank_templates", jsonTemplates)
-
-        editor.apply()
-        Toast.makeText(this, "تم حفظ الإعدادات والقوالب بنجاح! 💾", Toast.LENGTH_SHORT).show()
     }
 
     private fun showAddTemplateDialog() {
@@ -123,14 +81,40 @@ class MainActivity : AppCompatActivity() {
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_template, null)
         val spSenderList = dialogView.findViewById<Spinner>(R.id.spSenderList)
-        val etTemplatePattern = dialogView.findViewById<EditText>(R.id.etTemplatePattern)
+        val spSmsMessages = dialogView.findViewById<Spinner>(R.id.spSmsMessages)
+        val tvAutoGeneratedTemplate = dialogView.findViewById<TextView>(R.id.tvAutoGeneratedTemplate)
         val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
         val btnAdd = dialogView.findViewById<Button>(R.id.btnAddTemplate)
 
-        // جلب قائمة المرسلين المستخرجة من الهاتف
         val senders = getUniqueSmsSenders()
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, senders)
-        spSenderList.adapter = spinnerAdapter
+        val senderAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, senders)
+        spSenderList.adapter = senderAdapter
+
+        var currentSmsList = listOf<String>()
+        var finalGeneratedPattern = ""
+
+        spSenderList.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedSender = senders[position]
+                currentSmsList = getSmsMessagesForSender(selectedSender)
+                val smsAdapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, currentSmsList)
+                spSmsMessages.adapter = smsAdapter
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        spSmsMessages.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (currentSmsList.isNotEmpty()) {
+                    val selectedSmsText = currentSmsList[position]
+                    finalGeneratedPattern = TemplateGenerator.generateTemplateFromSms(selectedSmsText)
+                    tvAutoGeneratedTemplate.text = finalGeneratedPattern
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -141,21 +125,15 @@ class MainActivity : AppCompatActivity() {
 
         btnAdd.setOnClickListener {
             val selectedSender = spSenderList.selectedItem?.toString() ?: ""
-            val pattern = etTemplatePattern.text.toString().trim()
 
-            if (selectedSender.isEmpty()) {
-                Toast.makeText(this, "اختر اسم المرسل من القائمة", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            if (!pattern.contains("[amount]")) {
-                Toast.makeText(this, "يجب أن يحتوي القالب على [amount] للتعرف على المبلغ", Toast.LENGTH_LONG).show()
+            if (selectedSender.isEmpty() || finalGeneratedPattern.isEmpty()) {
+                Toast.makeText(this, "الرجاء اختيار مرسل ورسالة صحيحة", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val newTemplate = BankTemplate(
                 bankName = selectedSender,
-                templatePattern = pattern
+                templatePattern = finalGeneratedPattern
             )
 
             bankTemplatesList.add(newTemplate)
@@ -163,57 +141,14 @@ class MainActivity : AppCompatActivity() {
             saveSettings()
 
             dialog.dismiss()
-            Toast.makeText(this, "تمت إضافة بطاقة $selectedSender بنجاح!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "تم إضافة محفظة $selectedSender بنجاح!", Toast.LENGTH_SHORT).show()
         }
 
         dialog.show()
     }
 
-    private fun deleteTemplate(template: BankTemplate) {
-        bankTemplatesList.remove(template)
-        templateAdapter.notifyDataSetChanged()
-        saveSettings()
-        Toast.makeText(this, "تم حذف القالب", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun testSingleTemplate(template: BankTemplate) {
-        val smsUri = Uri.parse("content://sms/inbox")
-        val cursor: Cursor? = contentResolver.query(smsUri, null, null, null, "date DESC")
-
-        var matchedFound = false
-
-        cursor?.use { c ->
-            val addressIndex = c.getColumnIndex("address")
-            val bodyIndex = c.getColumnIndex("body")
-            var count = 0
-
-            while (c.moveToNext() && count < 20) { // فحص آخر 20 رسالة لهذا المرسل
-                val address = if (addressIndex >= 0) c.getString(addressIndex) ?: "" else ""
-                val body = if (bodyIndex >= 0) c.getString(bodyIndex) ?: "" else ""
-
-                if (address.equals(template.bankName, ignoreCase = true)) {
-                    val parseResult = TemplateParser.parse(body, template.templatePattern)
-                    if (parseResult.isMatched) {
-                        matchedFound = true
-                        AlertDialog.Builder(this)
-                            .setTitle("نجح اختبار القالب! ✅")
-                            .setMessage("تطابق مع رسالة من: ${template.bankName}\n\nالمبلغ المستخرج: ${parseResult.amount ?: "غير محدد"}\nاسم المحول المستخرج: ${parseResult.customerName ?: "غير محدد"}")
-                            .setPositiveButton("موافق", null)
-                            .show()
-                        break
-                    }
-                }
-                count++
-            }
-        }
-
-        if (!matchedFound) {
-            Toast.makeText(this, "لم نجد أي رسالة مطابقة للقالب في آخر رسائل ${template.bankName}", Toast.LENGTH_LONG).show()
-        }
-    }
-
     private fun getUniqueSmsSenders(): List<String> {
-        val sendersSet = mutableSetOf<String>()
+        val senders = mutableSetOf<String>()
         val smsUri = Uri.parse("content://sms/inbox")
         val cursor: Cursor? = contentResolver.query(smsUri, arrayOf("address"), null, null, "date DESC")
 
@@ -223,14 +158,60 @@ class MainActivity : AppCompatActivity() {
             while (c.moveToNext() && count < 100) {
                 val address = if (addressIndex >= 0) c.getString(addressIndex) else null
                 if (!address.isNullOrBlank()) {
-                    sendersSet.add(address) // تم التأكد من عدم كونها null
+                    senders.add(address)
                 }
                 count++
             }
         }
-        val list = sendersSet.toList()
-        return if (list.isNotEmpty()) list else listOf("CAB", "REFLECT")
+        return senders.ifEmpty { listOf("لا يوجد مرسلين") }.toList()
     }
 
-    private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()
+    private fun getSmsMessagesForSender(senderName: String): List<String> {
+        val messages = mutableListOf<String>()
+        val smsUri = Uri.parse("content://sms/inbox")
+        val cursor: Cursor? = contentResolver.query(smsUri, arrayOf("body", "address"), "address = ?", arrayOf(senderName), "date DESC")
+
+        cursor?.use { c ->
+            val bodyIndex = c.getColumnIndex("body")
+            var count = 0
+            while (c.moveToNext() && count < 10) {
+                val body = if (bodyIndex >= 0) c.getString(bodyIndex) else null
+                if (!body.isNullOrBlank()) {
+                    messages.add(body)
+                }
+                count++
+            }
+        }
+        return messages.ifEmpty { listOf("لا توجد رسائل لهذا المرسل") }
+    }
+
+    private fun saveSettings() {
+        val prefs = getSharedPreferences("cliq_prefs", Context.MODE_PRIVATE)
+        val gson = Gson()
+        val jsonTemplates = gson.toJson(bankTemplatesList)
+
+        prefs.edit().apply {
+            putString("webhook_url", binding.etWebhookUrl.text.toString())
+            putString("secret_token", binding.etSecretToken.text.toString())
+            putBoolean("service_enabled", binding.switchService.isChecked)
+            putString("bank_templates", jsonTemplates)
+            apply()
+        }
+    }
+
+    private fun loadSavedSettings() {
+        val prefs = getSharedPreferences("cliq_prefs", Context.MODE_PRIVATE)
+        binding.etWebhookUrl.setText(prefs.getString("webhook_url", ""))
+        binding.etSecretToken.setText(prefs.getString("secret_token", ""))
+        binding.switchService.isChecked = prefs.getBoolean("service_enabled", true)
+
+        val jsonTemplates = prefs.getString("bank_templates", null)
+        if (!jsonTemplates.isNullOrEmpty()) {
+            val type = object : TypeToken<List<BankTemplate>>() {}.type
+            val loaded: List<BankTemplate> = Gson().fromJson(jsonTemplates, type)
+            bankTemplatesList.clear()
+            bankTemplatesList.addAll(loaded)
+            templateAdapter.notifyDataSetChanged()
+        }
+    }
 }
