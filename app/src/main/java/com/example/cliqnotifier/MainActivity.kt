@@ -52,9 +52,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         templateAdapter = TemplateAdapter(bankTemplatesList) { position ->
-            bankTemplatesList.removeAt(position)
-            templateAdapter.notifyItemRemoved(position)
-            saveSettings()
+            if (position in bankTemplatesList.indices) {
+                bankTemplatesList.removeAt(position)
+                templateAdapter.notifyItemRemoved(position)
+                saveSettings()
+            }
         }
         binding.rvBankTemplates.layoutManager = LinearLayoutManager(this)
         binding.rvBankTemplates.adapter = templateAdapter
