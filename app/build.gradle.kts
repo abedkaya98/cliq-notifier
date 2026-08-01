@@ -52,6 +52,9 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.1")
     
-    // مكتبة OkHttp المطلوبة لإرسال الـ Webhook
+    // مكتبة OkHttp المطلوبة للإرسال عبر الشبكة
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    
+    // مكتبة الـ Splash Screen الرسمية للـ Preload العصري
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
