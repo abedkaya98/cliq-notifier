@@ -17,7 +17,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // تفعيل الـ ViewBinding بشكل صحيح لتوليد ActivityMainBinding
     buildFeatures {
         viewBinding = true
     }
