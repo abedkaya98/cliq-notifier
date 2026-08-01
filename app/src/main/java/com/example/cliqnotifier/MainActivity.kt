@@ -19,7 +19,6 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. تفعيل Preload Splash Screen
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
@@ -102,17 +101,19 @@ class MainActivity : AppCompatActivity() {
 
         var foundMatch = false
 
-        cursor?.use {
-            val addressIndex = it.getColumnIndex("address")
-            val bodyIndex = it.getColumnIndex("body")
-            val dateIndex = it.getColumnIndex("date")
+        cursor?.use { c ->
+            val addressIndex = c.getColumnIndex("address")
+            val bodyIndex = c.getColumnIndex("body")
+            val dateIndex = c.getColumnIndex("date")
 
-            while (it.moveToNext()) {
-                val address = it.getString(addressIndex) ?: ""
-                val body = it.getString(bodyIndex) ?: ""
-                val date = it.getLong(dateIndex)
+            while (c.moveToNext()) {
+                val address = if (addressIndex >= 0) c.getString(addressIndex) ?: "" else ""
+                val body = if (bodyIndex >= 0) c.getString(bodyIndex) ?: "" else ""
+                val date = if (dateIndex >= 0) c.getLong(dateIndex) else System.currentTimeMillis()
 
-                val isMatched = filters.any { filter -> address.lowercase().contains(filter) }
+                val isMatched = filters.any { filter -> 
+                    address.lowercase().contains(filter)
+                }
 
                 if (isMatched) {
                     foundMatch = true
