@@ -1,70 +1,138 @@
 package com.example.cliqnotifier
 
 import android.Manifest
-import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Switch
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.cliqnotifier.service.SmsForegroundService
-import com.example.cliqnotifier.utils.PrefsManager
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.cliqnotifier.databinding.ActivityMainBinding
+import com.example.cliqnotifier.utils.WebhookSender
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var prefs: PrefsManager
+
+    private lateinit var binding: ActivityMainBinding
+    private val PERMISSION_REQUEST_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 1. تفعيل Preload Splash Screen
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
-        
-        // واجهة برمجية بسيطة مباشرة بدون ملفات تصميم XML معقدة
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(40, 40, 40, 40)
-        }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        prefs = PrefsManager(this)
         checkPermissions()
+        loadSavedSettings()
 
-        val etWebhook = EditText(this).apply { hint = "رابط الـ Webhook الخاص بمتجرك"; setText(prefs.webhookUrl) }
-        val etToken = EditText(this).apply { hint = "مفتاح الأمان (Secret Token)"; setText(prefs.secretToken) }
-        val etFilter = EditText(this).apply { hint = "فلتر المرسل (مثل: CAB)"; setText(prefs.senderFilter) }
-        val switchService = Switch(this).apply { text = "تفعيل خدمة المراقبة 24/7"; isChecked = prefs.isServiceEnabled }
-        val btnSave = Button(this).apply { text = "حفظ الإعدادات" }
-
-        layout.addView(etWebhook)
-        layout.addView(etToken)
-        layout.addView(etFilter)
-        layout.addView(switchService)
-        layout.addView(btnSave)
-        setContentView(layout)
-
-        btnSave.setOnClickListener {
-            prefs.webhookUrl = etWebhook.text.toString().trim()
-            prefs.secretToken = etToken.text.toString().trim()
-            prefs.senderFilter = etFilter.text.toString().trim()
-            Toast.makeText(this, "تم الحفظ", Toast.LENGTH_SHORT).show()
+        binding.btnSave.setOnClickListener {
+            saveSettings()
         }
 
-        switchService.setOnCheckedChangeListener { _, isChecked ->
-            prefs.isServiceEnabled = isChecked
-            val intent = Intent(this, SmsForegroundService::class.java)
-            if (isChecked) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent) else startService(intent)
-            } else {
-                stopService(intent)
-            }
+        binding.btnTestLastSms.setOnClickListener {
+            testLastSms()
         }
     }
 
     private fun checkPermissions() {
-        val perms = mutableListOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) perms.add(Manifest.permission.POST_NOTIFICATIONS)
-        val missing = perms.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
-        if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 101)
+        val permissions = arrayOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.POST_NOTIFICATIONS
+        )
+        val listPermissionsNeeded = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (listPermissionsNeeded.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toTypedArray(), PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    private fun loadSavedSettings() {
+        val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
+        binding.etWebhookUrl.setText(prefs.getString("webhook_url", ""))
+        binding.etSecretToken.setText(prefs.getString("secret_token", ""))
+        binding.etSenderFilter.setText(prefs.getString("sender_filter", "CAB,REFLECT"))
+        binding.switchService.isChecked = prefs.getBoolean("service_enabled", false)
+    }
+
+    private fun saveSettings() {
+        val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putString("webhook_url", binding.etWebhookUrl.text.toString().trim())
+            putString("secret_token", binding.etSecretToken.text.toString().trim())
+            putString("sender_filter", binding.etSenderFilter.text.toString().trim())
+            putBoolean("service_enabled", binding.switchService.isChecked)
+            apply()
+        }
+        Toast.makeText(this, "تم حفظ الإعدادات بنجاح!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun testLastSms() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "الرجاء منح إذن قراءة الرسائل أولاً", Toast.LENGTH_SHORT).show()
+            checkPermissions()
+            return
+        }
+
+        val filtersRaw = binding.etSenderFilter.text.toString().trim()
+        if (filtersRaw.isEmpty()) {
+            Toast.makeText(this, "يرجى كتابة اسم مرسل في الفلتر أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val filters = filtersRaw.split(",").map { it.trim().lowercase() }
+        val webhookUrl = binding.etWebhookUrl.text.toString().trim()
+        val secretToken = binding.etSecretToken.text.toString().trim()
+
+        if (webhookUrl.isEmpty()) {
+            Toast.makeText(this, "يرجى إدخال رابط Webhook أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val cursor = contentResolver.query(
+            Uri.parse("content://sms/inbox"),
+            null, null, null, "date DESC"
+        )
+
+        var foundMatch = false
+
+        cursor?.use {
+            val addressIndex = it.getColumnIndex("address")
+            val bodyIndex = it.getColumnIndex("body")
+            val dateIndex = it.getColumnIndex("date")
+
+            while (it.moveToNext()) {
+                val address = it.getString(addressIndex) ?: ""
+                val body = it.getString(bodyIndex) ?: ""
+                val date = it.getLong(dateIndex)
+
+                val isMatched = filters.any { filter -> address.lowercase().contains(filter) }
+
+                if (isMatched) {
+                    foundMatch = true
+                    Toast.makeText(this, "تم العثور على رسالة من: $address .. جاري الإرسال", Toast.LENGTH_SHORT).show()
+                    
+                    WebhookSender.sendSmsToWebhook(
+                        context = this,
+                        webhookUrl = webhookUrl,
+                        secretToken = secretToken,
+                        sender = address,
+                        messageBody = body,
+                        timestamp = date
+                    )
+                    break
+                }
+            }
+        }
+
+        if (!foundMatch) {
+            Toast.makeText(this, "لم يتم العثور على رسائل مطابقة لـ: $filtersRaw", Toast.LENGTH_LONG).show()
+        }
     }
 }
