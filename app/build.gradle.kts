@@ -17,7 +17,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // تفعيل ViewBinding بشكل صريح ليعمل ActivityMainBinding
+    // تفعيل الـ ViewBinding بشكل صحيح لتوليد ActivityMainBinding
     buildFeatures {
         viewBinding = true
     }
@@ -38,9 +38,6 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.1")
     
-    // OkHttp للإرسال عبر Webhook
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    
-    // Splash Screen Preload
     implementation("androidx.core:core-splashscreen:1.0.1")
 }
