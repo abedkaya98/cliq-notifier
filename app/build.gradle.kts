@@ -18,9 +18,8 @@ android {
     }
 
     signingConfigs {
-        // إعداد شهادة الـ Debug الافتراضية لتوقيع التطبيق تلقائياً
         getByName("debug") {
-            // يتم استخدام الشهادة الافتراضية لنظام أندرويد
+            // توقيع التطبيق بشهادة الـ Debug الافتراضية
         }
     }
 
@@ -52,4 +51,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.1")
+    
+    // مكتبة OkHttp المطلوبة لإرسال الـ Webhook
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
