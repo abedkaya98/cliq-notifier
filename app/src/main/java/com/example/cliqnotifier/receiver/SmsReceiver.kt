@@ -1,43 +1,60 @@
-package com.example.cliqnotifier.receiver
+package com.example.cliqnotifier
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import com.example.cliqnotifier.models.BankTemplate
+import com.example.cliqnotifier.utils.TemplateParser
 import com.example.cliqnotifier.utils.WebhookSender
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class SmsReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
-            val prefs = context.getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
-            val isEnabled = prefs.getBoolean("service_enabled", false)
-            if (!isEnabled) return
+        if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
-            val webhookUrl = prefs.getString("webhook_url", "") ?: ""
-            val secretToken = prefs.getString("secret_token", "") ?: ""
-            val rawFilter = prefs.getString("sender_filter", "") ?: ""
+        val prefs = context.getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
+        val isEnabled = prefs.getBoolean("service_enabled", false)
+        if (!isEnabled) return
 
-            if (webhookUrl.isEmpty() || rawFilter.isEmpty()) return
+        val webhookUrl = prefs.getString("webhook_url", "") ?: ""
+        val secretToken = prefs.getString("secret_token", "") ?: ""
+        val jsonTemplates = prefs.getString("bank_templates", "[]") ?: "[]"
 
-            val filters = rawFilter.split(",").map { it.trim().lowercase() }
-            val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+        if (webhookUrl.isBlank()) return
 
-            for (sms in messages) {
-                val sender = sms.originatingAddress ?: ""
-                val body = sms.messageBody ?: ""
-                val timestamp = sms.timestampMillis
+        val gson = Gson()
+        val type = object : TypeToken<List<BankTemplate>>() {}.type
+        val templatesList: List<BankTemplate> = gson.fromJson(jsonTemplates, type) ?: emptyList()
 
-                val isMatched = filters.any { filter -> sender.lowercase().contains(filter) }
+        if (templatesList.isEmpty()) return
 
-                if (isMatched) {
-                    WebhookSender.sendSmsToWebhook(
-                        context = context,
-                        webhookUrl = webhookUrl,
-                        secretToken = secretToken,
-                        sender = sender,
-                        messageBody = body,
-                        timestamp = timestamp
-                    )
+        val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
+        for (sms in messages) {
+            val sender = sms.originatingAddress ?: continue
+            val body = sms.messageBody ?: continue
+            val timestamp = sms.timestampMillis
+
+            // البحث عن قالب مطابق لاسم المرسل
+            for (template in templatesList) {
+                if (sender.equals(template.bankName, ignoreCase = true)) {
+                    val result = TemplateParser.parse(body, template.templatePattern)
+                    if (result.isMatched) {
+                        // إرسال البيانات المستخرجة
+                        WebhookSender.sendNotification(
+                            context = context,
+                            webhookUrl = webhookUrl,
+                            secretToken = secretToken,
+                            walletName = template.bankName,
+                            amount = result.amount ?: "0.000",
+                            customerName = result.customerName ?: "Unknown",
+                            rawMessage = body,
+                            timestamp = timestamp
+                        )
+                        break
+                    }
                 }
             }
         }
