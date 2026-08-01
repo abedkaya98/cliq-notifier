@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- خلفية التطبيق الأساسية داكنة عميقة -->
+    <color name="bg_main">#0B0E14</color>
+    
+    <!-- خلفيات وأطر البطاقات الزجاجية (Glassmorphic) -->
+    <color name="glass_card_bg">#161B26</color>
+    <color name="glass_card_stroke">#2D3748</color>
+    <color name="glass_input_bg">#1A202C</color>
+    
+    <!-- الألوان الأساسية والتأكيدات -->
+    <color name="primary_accent">#8B5CF6</color>
+    <color name="primary_button">#7C3AED</color>
+    
+    <!-- نصوص ناصعة وقابلة للقراءة على الخافية الداكنة -->
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_gray">#A0AEC0</color>
+    <color name="text_muted">#718096</color>
+    
+    <!-- ألوان الحالة -->
+    <color name="accent_red">#EF4444</color>
+    <color name="accent_green">#10B981</color>
+</resources>
