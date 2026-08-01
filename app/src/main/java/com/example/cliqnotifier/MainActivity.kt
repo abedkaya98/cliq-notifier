@@ -18,7 +18,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.cliqnotifier.adapters.TemplateAdapter
 import com.example.cliqnotifier.databinding.ActivityMainBinding
+import com.example.cliqnotifier.models.BankTemplate
 import com.example.cliqnotifier.utils.TemplateGenerator
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -27,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val bankTemplatesList = mutableListOf<BankTemplate>()
-    private lateinit var templateAdapter: BankTemplateAdapter
+    private lateinit var templateAdapter: TemplateAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        templateAdapter = BankTemplateAdapter(bankTemplatesList) { position ->
+        templateAdapter = TemplateAdapter(bankTemplatesList) { position ->
             bankTemplatesList.removeAt(position)
             templateAdapter.notifyItemRemoved(position)
             saveSettings()
