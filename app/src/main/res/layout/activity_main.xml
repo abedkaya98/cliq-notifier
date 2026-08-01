@@ -3,57 +3,67 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_main"
     android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="إعدادات CliQ Notifier"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="#111827"
         android:layout_gravity="center"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:text="إعدادات CliQ Notifier"
+        android:textColor="@color/text_white"
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
-    <!-- إعدادات السيرفر -->
+    <!-- كارت إعدادات السيرفر الزجاجي -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp">
+        app:cardBackgroundColor="@color/glass_card_bg"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/glass_card_stroke"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="16dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:hint="رابط الـ Webhook">
+                android:layout_marginBottom="12dp"
+                android:hint="رابط الـ Webhook"
+                android:textColorHint="@color/text_gray"
+                app:hintTextColor="@color/primary_accent">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etWebhookUrl"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textUri"/>
+                    android:inputType="textUri"
+                    android:textColor="@color/text_white" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:hint="التوكن السري (Secret Token)">
+                android:layout_marginBottom="12dp"
+                android:hint="التوكن السري (Secret Token)"
+                android:textColorHint="@color/text_gray"
+                app:hintTextColor="@color/primary_accent">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSecretToken"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword"/>
+                    android:inputType="textPassword"
+                    android:textColor="@color/text_white" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.materialswitch.MaterialSwitch
@@ -61,48 +71,51 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="تفعيل خدمة التنصت للرسائل"
-                android:textSize="14sp"/>
+                android:textColor="@color/text_white"
+                android:textSize="14sp" />
 
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="حفظ إعدادات السيرفر 💾"/>
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@color/primary_button"
+                android:text="حفظ إعدادات السيرفر 💾"
+                android:textColor="@color/text_white" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- شريط إضافة البنوك وقائمتها -->
+    <!-- شريط قائمة القوالب -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginBottom="8dp"
         android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="قائمة القوالب المفعلة:"
+            android:textColor="@color/text_white"
             android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#374151"/>
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnAddBankCard"
-            style="@style/Widget.MaterialComponents.Button.Icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:backgroundTint="@color/primary_accent"
             android:text="إضافة بنك ➕"
-            android:textSize="12sp"/>
+            android:textColor="@color/text_white"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- قائمة البطاقات التي تم إنشاؤها -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvBankTemplates"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
 </LinearLayout>
