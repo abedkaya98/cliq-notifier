@@ -3,6 +3,7 @@ package com.example.cliqnotifier
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -62,13 +63,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveSettings() {
         val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
-        prefs.edit().apply {
-            putString("webhook_url", binding.etWebhookUrl.text.toString().trim())
-            putString("secret_token", binding.etSecretToken.text.toString().trim())
-            putString("sender_filter", binding.etSenderFilter.text.toString().trim())
-            putBoolean("service_enabled", binding.switchService.isChecked)
-            apply()
-        }
+        val editor = prefs.edit()
+        editor.putString("webhook_url", binding.etWebhookUrl.text.toString().trim())
+        editor.putString("secret_token", binding.etSecretToken.text.toString().trim())
+        editor.putString("sender_filter", binding.etSenderFilter.text.toString().trim())
+        editor.putBoolean("service_enabled", binding.switchService.isChecked)
+        editor.apply()
+
         Toast.makeText(this, "تم حفظ الإعدادات بنجاح!", Toast.LENGTH_SHORT).show()
     }
 
@@ -85,7 +86,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val filters = filtersRaw.split(",").map { it.trim().lowercase() }
+        val filters: List<String> = filtersRaw.split(",").map { it.trim().lowercase() }
         val webhookUrl = binding.etWebhookUrl.text.toString().trim()
         val secretToken = binding.etSecretToken.text.toString().trim()
 
@@ -94,25 +95,25 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val cursor = contentResolver.query(
+        val cursor: Cursor? = contentResolver.query(
             Uri.parse("content://sms/inbox"),
             null, null, null, "date DESC"
         )
 
         var foundMatch = false
 
-        cursor?.use { c ->
-            val addressIndex = c.getColumnIndex("address")
-            val bodyIndex = c.getColumnIndex("body")
-            val dateIndex = c.getColumnIndex("date")
+        cursor?.use { smsCursor ->
+            val addressIndex = smsCursor.getColumnIndex("address")
+            val bodyIndex = smsCursor.getColumnIndex("body")
+            val dateIndex = smsCursor.getColumnIndex("date")
 
-            while (c.moveToNext()) {
-                val address = if (addressIndex >= 0) c.getString(addressIndex) ?: "" else ""
-                val body = if (bodyIndex >= 0) c.getString(bodyIndex) ?: "" else ""
-                val date = if (dateIndex >= 0) c.getLong(dateIndex) else System.currentTimeMillis()
+            while (smsCursor.moveToNext()) {
+                val address: String = if (addressIndex >= 0) smsCursor.getString(addressIndex) ?: "" else ""
+                val body: String = if (bodyIndex >= 0) smsCursor.getString(bodyIndex) ?: "" else ""
+                val date: Long = if (dateIndex >= 0) smsCursor.getLong(dateIndex) else System.currentTimeMillis()
 
-                val isMatched = filters.any { filter -> 
-                    address.lowercase().contains(filter)
+                val isMatched = filters.any { filterItem: String ->
+                    address.lowercase().contains(filterItem)
                 }
 
                 if (isMatched) {
