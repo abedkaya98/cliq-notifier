@@ -6,34 +6,48 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.example.cliqnotifier.databinding.ActivityMainBinding
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.example.cliqnotifier.utils.WebhookSender
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private val PERMISSION_REQUEST_CODE = 101
+
+    private lateinit var etWebhookUrl: EditText
+    private lateinit var etSecretToken: EditText
+    private lateinit var etSenderFilter: EditText
+    private lateinit var switchService: MaterialSwitch
+    private lateinit var btnSave: Button
+    private lateinit var btnTestLastSms: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
+
+        // Binding UI Elements directly
+        etWebhookUrl = findViewById(R.id.etWebhookUrl)
+        etSecretToken = findViewById(R.id.etSecretToken)
+        etSenderFilter = findViewById(R.id.etSenderFilter)
+        switchService = findViewById(R.id.switchService)
+        btnSave = findViewById(R.id.btnSave)
+        btnTestLastSms = findViewById(R.id.btnTestLastSms)
 
         checkPermissions()
         loadSavedSettings()
 
-        binding.btnSave.setOnClickListener {
+        btnSave.setOnClickListener {
             saveSettings()
         }
 
-        binding.btnTestLastSms.setOnClickListener {
+        btnTestLastSms.setOnClickListener {
             testLastSms()
         }
     }
@@ -44,8 +58,8 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.READ_SMS,
             Manifest.permission.POST_NOTIFICATIONS
         )
-        val listPermissionsNeeded = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        val listPermissionsNeeded = permissions.filter { permission ->
+            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
         }
 
         if (listPermissionsNeeded.isNotEmpty()) {
@@ -55,19 +69,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadSavedSettings() {
         val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
-        binding.etWebhookUrl.setText(prefs.getString("webhook_url", ""))
-        binding.etSecretToken.setText(prefs.getString("secret_token", ""))
-        binding.etSenderFilter.setText(prefs.getString("sender_filter", "CAB,REFLECT"))
-        binding.switchService.isChecked = prefs.getBoolean("service_enabled", false)
+        etWebhookUrl.setText(prefs.getString("webhook_url", ""))
+        etSecretToken.setText(prefs.getString("secret_token", ""))
+        etSenderFilter.setText(prefs.getString("sender_filter", "CAB,REFLECT"))
+        switchService.isChecked = prefs.getBoolean("service_enabled", false)
     }
 
     private fun saveSettings() {
         val prefs = getSharedPreferences("CliQSettings", Context.MODE_PRIVATE)
         val editor = prefs.edit()
-        editor.putString("webhook_url", binding.etWebhookUrl.text.toString().trim())
-        editor.putString("secret_token", binding.etSecretToken.text.toString().trim())
-        editor.putString("sender_filter", binding.etSenderFilter.text.toString().trim())
-        editor.putBoolean("service_enabled", binding.switchService.isChecked)
+        
+        val url = etWebhookUrl.text.toString().trim()
+        val token = etSecretToken.text.toString().trim()
+        val filter = etSenderFilter.text.toString().trim()
+        val isEnabled = switchService.isChecked
+
+        editor.putString("webhook_url", url)
+        editor.putString("secret_token", token)
+        editor.putString("sender_filter", filter)
+        editor.putBoolean("service_enabled", isEnabled)
         editor.apply()
 
         Toast.makeText(this, "تم حفظ الإعدادات بنجاح!", Toast.LENGTH_SHORT).show()
@@ -80,25 +100,23 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val filtersRaw = binding.etSenderFilter.text.toString().trim()
+        val filtersRaw = etSenderFilter.text.toString().trim()
         if (filtersRaw.isEmpty()) {
             Toast.makeText(this, "يرجى كتابة اسم مرسل في الفلتر أولاً", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val filters: List<String> = filtersRaw.split(",").map { it.trim().lowercase() }
-        val webhookUrl = binding.etWebhookUrl.text.toString().trim()
-        val secretToken = binding.etSecretToken.text.toString().trim()
+        val filters: List<String> = filtersRaw.split(",").map { item -> item.trim().lowercase() }
+        val webhookUrl = etWebhookUrl.text.toString().trim()
+        val secretToken = etSecretToken.text.toString().trim()
 
         if (webhookUrl.isEmpty()) {
             Toast.makeText(this, "يرجى إدخال رابط Webhook أولاً", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val cursor: Cursor? = contentResolver.query(
-            Uri.parse("content://sms/inbox"),
-            null, null, null, "date DESC"
-        )
+        val smsUri = Uri.parse("content://sms/inbox")
+        val cursor: Cursor? = contentResolver.query(smsUri, null, null, null, "date DESC")
 
         var foundMatch = false
 
@@ -112,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                 val body: String = if (bodyIndex >= 0) smsCursor.getString(bodyIndex) ?: "" else ""
                 val date: Long = if (dateIndex >= 0) smsCursor.getLong(dateIndex) else System.currentTimeMillis()
 
-                val isMatched = filters.any { filterItem: String ->
+                val isMatched = filters.any { filterItem ->
                     address.lowercase().contains(filterItem)
                 }
 
