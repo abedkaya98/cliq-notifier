@@ -30,7 +30,8 @@
             </intent-filter>
         </activity>
 
-        <!-- مستقبل رسائل SMS -->
+        <!-- معطل مؤقتاً لاختبار استقرار التطبيق -->
+        <!--
         <receiver
             android:name=".receiver.SmsReceiver"
             android:enabled="true"
@@ -41,7 +42,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- مستقبل إعادة تشغيل الجهاز -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:enabled="true"
@@ -51,12 +51,12 @@
             </intent-filter>
         </receiver>
 
-        <!-- خدمة الخلفية -->
         <service
             android:name=".service.SmsForegroundService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        -->
 
     </application>
 
