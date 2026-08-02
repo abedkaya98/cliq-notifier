@@ -7,6 +7,8 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -41,7 +43,6 @@ class MainActivity : AppCompatActivity() {
 
             setupRecyclerView()
             loadSavedSettings()
-            checkPermissions()
 
             binding.btnSave.setOnClickListener {
                 saveSettings()
@@ -51,9 +52,14 @@ class MainActivity : AppCompatActivity() {
             binding.btnAddBankCard.setOnClickListener {
                 showAddTemplateDialog()
             }
+
+            // تأخير طلب الصلاحيات نصف ثانية بعد فتح الشاشة لتفادي كراش الواجهة
+            Handler(Looper.getMainLooper()).postDelayed({
+                checkPermissions()
+            }, 500)
+
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "خطأ في تشغيل الواجهة: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -70,25 +76,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
-        try {
-            val permissions = mutableListOf(
-                Manifest.permission.RECEIVE_SMS,
-                Manifest.permission.READ_SMS
-            )
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (isFinishing || isDestroyed) return
 
-            val missingPermissions = permissions.filter {
-                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-            }
+        val permissionsList = mutableListOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+        )
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionsList.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
-            if (missingPermissions.isNotEmpty()) {
-                ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), 101)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        val missingPermissions = permissionsList.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), 101)
         }
     }
 
