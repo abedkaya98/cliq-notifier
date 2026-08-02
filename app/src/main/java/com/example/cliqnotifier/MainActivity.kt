@@ -32,6 +32,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var templateAdapter: TemplateAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // تحويل الثيم للثيم الرئيسي فوراً لمنع الكراش
+        setTheme(R.style.AppTheme)
+
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
