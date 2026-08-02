@@ -1,26 +1,20 @@
 <resources>
-    <!-- الثيم الرئيسي للتطبيق - إجبار النمط الداكن -->
+    <!-- الثيم الرئيسي الداكن والمستقر -->
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- الألوان الأساسية -->
         <item name="colorPrimary">@color/primary_accent</item>
         <item name="colorPrimaryVariant">@color/primary_button</item>
         <item name="colorOnPrimary">@color/text_white</item>
         
-        <!-- خلفيات الشاشات والنافذة -->
+        <!-- خلفيات الشاشات -->
         <item name="android:windowBackground">@color/bg_main</item>
         <item name="android:colorBackground">@color/bg_main</item>
         
-        <!-- ألوان النصوص افتراضياً -->
+        <!-- ألوان النصوص -->
         <item name="android:textColorPrimary">@color/text_white</item>
         <item name="android:textColorSecondary">@color/text_gray</item>
         
-        <!-- حقول المدخلات (Text Inputs) -->
+        <!-- حقول المدخلات -->
         <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
-    </style>
-
-    <!-- ثيم شاشة البداية (Splash Screen) المطلوبة في الـ Manifest -->
-    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/bg_main</item>
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>
