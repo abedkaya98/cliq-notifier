@@ -20,8 +20,6 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            // توحيد مفتاح التوقيع لتسهيل التحديث التلقائي دون مسح التطبيق
-            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
